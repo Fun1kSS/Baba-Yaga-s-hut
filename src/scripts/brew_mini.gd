@@ -8,13 +8,12 @@ const LAYER_DRAW := preload("res://scripts/brew_mini_draw.gd")
 const BOWL := Vector2(1178, 699)
 const FLAME := Vector2(1410, 626)
 const FLAME_RADIUS := 46.0
-const GRIND_TIME := 10.0
-const CUE_LIFE := 1.0
+const CUE_LIFE := 2.5
 const CUE_GAP := 0.4
-const CUE_REACH := 42.0
+const GRIND_TIME := 10.0
 const HEAT_RATE := 0.6
 const COOL_RATE := 0.9
-const READY_RATE := 0.125
+const READY_RATE := 0.195
 const READY_DECAY := 0.04
 
 var _mode := ""
@@ -116,6 +115,9 @@ func _advance(delta: float, pointer: Vector2, holding: bool) -> void:
 	if _mode == "mortar":
 		_move_pestle(pointer, delta)
 		_elapsed += delta
+		if _elapsed >= GRIND_TIME:
+			_complete()
+			return
 		if _cue_button != 0:
 			_cue_left -= delta
 			if _cue_left <= 0.0:
@@ -125,11 +127,8 @@ func _advance(delta: float, pointer: Vector2, holding: bool) -> void:
 					return
 		else:
 			_next_cue -= delta
-			if _next_cue <= 0.0 and _elapsed < GRIND_TIME:
+			if _next_cue <= 0.0:
 				_spawn_cue()
-		if _elapsed >= GRIND_TIME:
-			_complete()
-			return
 	else:
 		_herb.global_position = pointer + Vector2(48, 40)
 		var over := pointer.distance_to(FLAME) <= FLAME_RADIUS
@@ -162,12 +161,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _try_press(button: int, pointer: Vector2, want: int) -> void:
-	var near := pointer.distance_to(_cue_pos) <= CUE_REACH
+	var near := pointer.distance_to(_cue_pos) <= _pestle_span() * 1.1
 	var ok := button == want and near
 	_clear_cue()
 	_next_cue = CUE_GAP
 	if not ok:
 		missed.emit()
+
+
+func _pestle_span() -> float:
+	return PESTLE.get_width() * _pestle.scale.x
 
 
 func _move_pestle(pointer: Vector2, _delta: float) -> void:

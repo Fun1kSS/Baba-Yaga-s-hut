@@ -163,8 +163,16 @@ static func failure_line(guest_id: String) -> String:
 	return _spoken(guest_id, FAILURE[guest_id])
 
 
+static var _last_raven_word := -1
+
+
 static func raven_line() -> String:
-	return RAVEN_WORDS[randi() % RAVEN_WORDS.size()]
+	var count := RAVEN_WORDS.size()
+	var index := randi() % count
+	if count > 1 and index == _last_raven_word:
+		index = (index + 1 + randi() % (count - 1)) % count
+	_last_raven_word = index
+	return RAVEN_WORDS[index]
 
 
 static func step(potion_id: String, index: int) -> Array:

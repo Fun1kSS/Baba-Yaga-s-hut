@@ -15,6 +15,9 @@ const SPEECH_Y1 := 1010.0
 const SPEECH_LEFT1 := 42.0
 const SPEECH_WIDTH := 1696.0
 const SPEECH_PAD := 36.0
+const HINT_PAD := 120.0
+const HINT_TITLE := "ПОДСКАЗКА:"
+const RAVEN_TITLE := "Ворон:"
 const NOTE_BODY := "Зелья готовятся по просьбе гостя нашего. Рецепт я оставила в книге, ингредиенты ищи в мешке!\n\nКогда свечу используешь — смотри, чтобы ничего не перегорело, а когда в ступке мелешь — перетирай везде, где увидишь слишком крупные крупицы."
 const NOTE_SIGN := "- Баба Яга"
 const NOTE_PAD := 44.0
@@ -24,6 +27,19 @@ const DAY_PRAISE: PackedStringArray = [
 	"КАРРРкой же ты молодец.",
 	"Ты КАРнечно не Баба Яга, но зелья варишь лучше неё.",
 ]
+const RAVEN_TIPS: PackedStringArray = [
+	"Если забыл рецепт — посмотри в книгу.",
+	"Постарайся не делать ошибок.",
+	"Ингредиенты лежат в мешке, бери сколько нужно.",
+	"Сначала подготовь траву и только потом лей её в котёл.",
+	"Четыре ошибки — и гость уйдёт ни с чем.",
+	"Чем меньше промахов, тем больше монет за зелье.",
+	"Следи за целью дня: недобранные монеты обернутся бедой.",
+]
+const MINI_HINTS := {
+	"instr_a": "Вовремя нажимай нужной кнопкой мыши по значкам!",
+	"instr_b": "Доведи продукт до готовности, но не допусти перегрева!",
+}
 const CARRY_TEXTURES := {
 	"ingr_a": preload("res://art/ingredients/ingr_a.png"),
 	"ingr_b": preload("res://art/ingredients/ingr_b.png"),
@@ -49,11 +65,19 @@ var guests_pool: Array[String] = []
 var potions_pool: Array[String] = []
 var _token := 0
 var _tween: Tween
+var _pot_shake: Tween
+var _pot_home := Vector2.ZERO
+var _pot_shaking := false
 var _after_speech: Callable = Callable()
 var _cells: Dictionary = {}
 var _awaiting_pot := false
 var _potion_ready := false
 var _mini: Node
+var _mini_tool := ""
+var _mini_hint := false
+var _raven_image: Image
+var _last_raven_tip := -1
+var _last_praise := -1
 
 signal _leave_done
 
@@ -89,6 +113,7 @@ func _ready() -> void:
 	_connect_ui()
 	_build_cells()
 	_layout_note()
+	_setup_raven()
 	_set_tools_enabled(false)
 	$Exit.enabled = true
 	$Exit.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -149,6 +174,8 @@ func _show_title() -> void:
 	_reset_brew()
 	day_title.text = "ДЕНЬ %d" % day
 	day_title.visible = true
+	_mini_hint = false
+	$Speech/Catcher.mouse_filter = Control.MOUSE_FILTER_STOP
 	_set_tools_enabled(false)
 	help.enabled = false
 	_update_money()
@@ -283,12 +310,15 @@ func _begin_mini(tool_id: String) -> void:
 	_set_tools_enabled(false)
 	_close_panels()
 	_mini.start(tool_id, tex)
+	_mini_tool = tool_id
+	_show_mini_hint(tool_id)
 
 
 func _on_mini_finished(tool_id: String) -> void:
 	if phase != Phase.MINI:
 		return
 	phase = Phase.COOK
+	_hide_mini_hint()
 	_awaiting_pot = true
 	_show_processed(tool_id)
 	_apply_cook_tools()
@@ -312,6 +342,7 @@ func _resume_mini() -> void:
 		return
 	phase = Phase.MINI
 	_mini.resume()
+	_show_mini_hint(_mini_tool)
 
 
 func _pour_into_cauldron() -> void:
@@ -320,11 +351,50 @@ func _pour_into_cauldron() -> void:
 	step_index += 1
 	$Props/Cauldron.flash_pressed()
 	if step_index >= GameCatalog.step_count(potion_id):
-		_potion_ready = true
 		_set_tools_enabled(false)
-		give_potion.visible = true
+		_shake_cauldron()
 	else:
 		_apply_cook_tools()
+
+
+func _shake_cauldron() -> void:
+	var sprite: Sprite2D = $Props/Cauldron/Sprite2D
+	_stop_pot_shake()
+	_pot_home = sprite.position
+	_pot_shaking = true
+	var amp := sprite.texture.get_height() * absf(sprite.scale.y) * 0.05
+	_pot_shake = create_tween()
+	_pot_shake.tween_method(_pot_offset.bind(sprite, amp), 0.0, 4.5, 4.5)
+	_pot_shake.finished.connect(_on_pot_shake_finished)
+
+
+func _pot_offset(time: float, sprite: Sprite2D, amp: float) -> void:
+	if not _pot_shaking or not is_instance_valid(sprite):
+		return
+	var omega := (1.0 / 0.5) / 0.05
+	sprite.position = _pot_home + Vector2(sin(time * omega), cos(time * omega)) * amp
+
+
+func _on_pot_shake_finished() -> void:
+	if not _pot_shaking:
+		return
+	_stop_pot_shake()
+	if phase != Phase.COOK:
+		return
+	_potion_ready = true
+	_set_tools_enabled(false)
+	give_potion.visible = true
+
+
+func _stop_pot_shake() -> void:
+	var running := _pot_shake
+	var was := _pot_shaking
+	_pot_shake = null
+	_pot_shaking = false
+	if was and is_node_ready():
+		($Props/Cauldron/Sprite2D as Sprite2D).position = _pot_home
+	if running and is_instance_valid(running):
+		running.kill()
 
 
 func _fail_step() -> void:
@@ -396,6 +466,8 @@ func _finish_day() -> void:
 	help.enabled = false
 	_close_panels()
 	speech.visible = false
+	_mini_hint = false
+	$Speech/Catcher.mouse_filter = Control.MOUSE_FILTER_STOP
 	guest.visible = false
 	_reset_brew()
 	if money >= goal:
@@ -403,7 +475,8 @@ func _finish_day() -> void:
 		goal += DAY_GOAL_STEP
 		_update_money()
 		phase = Phase.CLEAR
-		$GoodDay/Praise.text = "ВОРОН: %s" % DAY_PRAISE[randi() % DAY_PRAISE.size()]
+		_last_praise = _next_line(DAY_PRAISE, _last_praise)
+		$GoodDay/Praise.text = "ВОРОН: %s" % DAY_PRAISE[_last_praise]
 		good_day.visible = true
 	else:
 		phase = Phase.OVER
@@ -563,8 +636,74 @@ func _on_cell_input(event: InputEvent, ingredient: String) -> void:
 		bag_interior.visible = false
 
 
+func _setup_raven() -> void:
+	var raven: Sprite2D = $Props/Raven
+	_raven_image = raven.texture.get_image()
+	var used := _raven_image.get_used_rect()
+	var hit := Control.new()
+	hit.name = "Hit"
+	hit.mouse_filter = Control.MOUSE_FILTER_STOP
+	hit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	hit.position = Vector2(used.position) - raven.texture.get_size() * 0.5
+	hit.size = Vector2(used.size)
+	hit.gui_input.connect(_on_raven_input)
+	raven.add_child(hit)
+
+
+func _on_raven_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed):
+		return
+	var local := (event as InputEventMouseButton).position
+	var hit := $Props/Raven/Hit as Control
+	var pixel := hit.position + local + ($Props/Raven as Sprite2D).texture.get_size() * 0.5
+	var x := int(pixel.x)
+	var y := int(pixel.y)
+	if x < 0 or y < 0 or x >= _raven_image.get_width() or y >= _raven_image.get_height():
+		return
+	if _raven_image.get_pixel(x, y).a <= 0.08:
+		return
+	_speak_raven()
+
+
+func _speak_raven() -> void:
+	if phase == Phase.TITLE or phase == Phase.MINI or phase == Phase.TALK or phase == Phase.OVER or phase == Phase.CLEAR:
+		return
+	if speech.visible or _pot_shaking or bag_interior.visible or recipe_book.visible:
+		return
+	_last_raven_tip = _next_line(RAVEN_TIPS, _last_raven_tip)
+	_layout_hint(RAVEN_TIPS[_last_raven_tip], true)
+	speech.visible = true
+	_after_speech = Callable()
+
+
+func _next_line(lines: PackedStringArray, last: int) -> int:
+	var count := lines.size()
+	var index := randi() % count
+	if count > 1 and index == last:
+		index = (index + 1 + randi() % (count - 1)) % count
+	return index
+
+
+func _show_mini_hint(tool_id: String) -> void:
+	if not MINI_HINTS.has(tool_id):
+		return
+	_layout_hint(str(MINI_HINTS[tool_id]), false)
+	speech.visible = true
+	_mini_hint = true
+	_after_speech = Callable()
+	$Speech/Catcher.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _hide_mini_hint() -> void:
+	if not _mini_hint:
+		return
+	_mini_hint = false
+	speech.visible = false
+	$Speech/Catcher.mouse_filter = Control.MOUSE_FILTER_STOP
+
+
 func _on_speech_input(event: InputEvent) -> void:
-	if not speech.visible:
+	if not speech.visible or _mini_hint:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		speech.visible = false
@@ -595,7 +734,53 @@ func _wrap_speech(font: Font, text: String, font_size: int, max_width: float) ->
 	return lines
 
 
+func _layout_hint(body: String, raven: bool) -> void:
+	var font := speech_label.get_theme_font("font")
+	var body_size := speech_label.get_theme_font_size("font_size")
+	var body_color := speech_label.get_theme_color("font_color")
+	var title_size := speech_name.get_theme_font_size("font_size")
+	var title_color := speech_name.get_theme_color("font_color")
+	var max_width := SPEECH_WIDTH - HINT_PAD * 2.0
+	speech_name.visible = false
+	for child in speech_lines.get_children():
+		child.free()
+	var line_h := font.get_height(body_size)
+	var lines := _wrap_speech(font, body, body_size, max_width)
+	var y: float
+	if raven:
+		var title_h := font.get_height(title_size)
+		var block_h := title_h + 8.0 + lines.size() * line_h
+		var area_top := SPEECH_TOP + 16.0
+		var area_h := (SPEECH_BOTTOM - 20.0) - area_top
+		y = area_top + maxf(0.0, (area_h - block_h) * 0.5)
+		y = _add_centered_line(RAVEN_TITLE, y, title_size, title_color, font, max_width) + 8.0
+	else:
+		y = SPEECH_TOP + 14.0
+		y = _add_centered_line(HINT_TITLE, y, title_size, title_color, font, max_width) + 6.0
+		var room := (SPEECH_BOTTOM - 20.0) - y
+		y += maxf(0.0, (room - lines.size() * line_h) * 0.5)
+	for line in lines:
+		y = _add_centered_line(line, y, body_size, body_color, font, max_width)
+
+
+func _add_centered_line(text: String, y: float, font_size: int, color: Color, font: Font, max_width: float) -> float:
+	var line_h := font.get_height(font_size)
+	var x := _speech_left(y + line_h * 0.5) + HINT_PAD
+	var label := Label.new()
+	label.text = text
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.position = Vector2(x, y)
+	label.size = Vector2(max_width, line_h)
+	speech_lines.add_child(label)
+	return y + line_h
+
+
 func _show_speech(text: String, then: Callable) -> void:
+	_mini_hint = false
+	$Speech/Catcher.mouse_filter = Control.MOUSE_FILTER_STOP
 	phase = Phase.TALK
 	_set_tools_enabled(false)
 	_close_panels()
@@ -700,6 +885,7 @@ func _reset_brew() -> void:
 	_potion_ready = false
 	if _mini:
 		_mini.abort()
+	_stop_pot_shake()
 	if is_node_ready():
 		give_potion.visible = false
 		_set_selected("")
@@ -734,6 +920,7 @@ func _invalidate() -> void:
 	_after_speech = Callable()
 	if _mini:
 		_mini.abort()
+	_stop_pot_shake()
 	if _tween and is_instance_valid(_tween):
 		_tween.kill()
 	guest.visible = false
