@@ -22,6 +22,18 @@ const NOTE_BODY := "Зелья готовятся по просьбе гостя
 const NOTE_SIGN := "- Баба Яга"
 const NOTE_PAD := 44.0
 const NOTE_GAP := 22.0
+const NOTE_BAR_W := 18.0
+const NOTE_BAR_EDGE := 14.0
+const NOTE_BAR_GAP := 12.0
+const NOTE_WHEEL := 64.0
+const NOTE_BOOK := "Чтобы посмотреть все рецепты, смотри в книгу рецептов:"
+const NOTE_CANDLE := "Когда используешь свечу, появятся две шкалы — красная и зеленая. Доведи зеленую до конца, но следи, чтобы красная шкала не заполнилась:"
+const NOTE_MORTAR := "Когда используешь ступку — кликай нужными клавишами на мыши по значкам. Ты поймешь, какую нажимать — она будет отмечена красным цветом:"
+const NOTE_BOOK_OPEN := preload("res://art/tutorial/book_open.png")
+const NOTE_BOOK_PAGES := preload("res://art/tutorial/book_pages.png")
+const NOTE_CANDLE_TEX := preload("res://art/tutorial/candle.png")
+const NOTE_MORTAR_TEX := preload("res://art/tutorial/mortar.png")
+const NoteBarScript := preload("res://scripts/note_bar.gd")
 const DAY_PRAISE: PackedStringArray = [
 	"Мне немного КАРжется, что ты сегодня старался.",
 	"КАРРРкой же ты молодец.",
@@ -78,6 +90,11 @@ var _mini_hint := false
 var _raven_image: Image
 var _last_raven_tip := -1
 var _last_praise := -1
+var _note_view: Control
+var _note_content: Control
+var _note_bar
+var _note_offset := 0.0
+var _note_max := 0.0
 
 signal _leave_done
 
@@ -125,6 +142,7 @@ func _connect_ui() -> void:
 	$Props/Quest.clicked.connect(_on_quest)
 	help.clicked.connect(_on_help)
 	$Note/Catcher.gui_input.connect(_on_note_input)
+	$Note/Window.gui_input.connect(_on_note_wheel)
 	$Props/Book.clicked.connect(_on_book)
 	$Props/Mortar.clicked.connect(func() -> void: _on_tool("instr_a"))
 	$Props/Candle.clicked.connect(func() -> void: _on_tool("instr_b"))
@@ -528,6 +546,7 @@ func _on_help() -> void:
 		return
 	bag_interior.visible = false
 	recipe_book.visible = false
+	_reset_note_scroll()
 	note.visible = true
 	get_tree().paused = true
 
@@ -553,50 +572,170 @@ func _layout_note() -> void:
 	var sign: Label = $Note/Window/Sign
 	var window: Panel = $Note/Window
 	var lo := 280.0
-	var hi := 760.0
-	var body_h := 0.0
-	var sign_h := 0.0
+	var hi := 860.0
 	var column := 480.0
-	for _i in 14:
+	for _i in 16:
 		column = (lo + hi) * 0.5
-		var measured := _note_block(body, sign, column)
-		body_h = measured.x
-		sign_h = measured.y
-		var height := body_h + NOTE_GAP + sign_h
-		if height > column:
+		if _note_old_height(body, sign, column) > column:
 			lo = column
 		else:
 			hi = column
 	column = hi
 	var measured := _note_block(body, sign, column)
-	body_h = measured.x
-	sign_h = measured.y
-	var block_h := body_h + NOTE_GAP + sign_h
-	var block := maxf(column, block_h)
-	var side := block + NOTE_PAD * 2.0
+	var block := measured.x + NOTE_GAP + measured.y
+	var side := maxf(block, column) + NOTE_PAD * 2.0
 	var origin := (Vector2(1920, 1080) - Vector2(side, side)) * 0.5
 	window.offset_left = origin.x
 	window.offset_top = origin.y
 	window.offset_right = origin.x + side
 	window.offset_bottom = origin.y + side
-	var left := NOTE_PAD + (block - column) * 0.5
-	var top := NOTE_PAD + (block - block_h) * 0.5
-	body.text = NOTE_BODY
-	body.offset_left = left
-	body.offset_top = top
-	body.offset_right = left + column
-	body.offset_bottom = top + body_h
-	sign.text = NOTE_SIGN
-	sign.offset_left = left
-	sign.offset_top = top + body_h + NOTE_GAP
-	sign.offset_right = left + column
-	sign.offset_bottom = sign.offset_top + sign_h
+	_ensure_note_scroll(window)
+	var bar_x := side - NOTE_BAR_EDGE - NOTE_BAR_W
+	_note_view.position = Vector2(NOTE_PAD, NOTE_PAD)
+	_note_view.size = Vector2(column, block)
+	_note_bar.position = Vector2(bar_x, NOTE_BAR_EDGE)
+	_note_bar.size = Vector2(NOTE_BAR_W, side - NOTE_BAR_EDGE * 2.0)
+	if body.get_parent() != _note_content:
+		body.reparent(_note_content)
+	if sign.get_parent() != _note_content:
+		sign.reparent(_note_content)
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sign.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var y := 0.0
+	_place_note_label(body, column, y, measured.x)
+	y += measured.x + NOTE_GAP
+	_place_note_label(sign, column, y, measured.y)
+	var line_h := sign.get_theme_font("font").get_height(sign.get_theme_font_size("font_size"))
+	y += measured.y + line_h * 10.0
+	_clear_note_extra()
+	y = _add_note_text(NOTE_BOOK, column, y)
+	var pair := (column - NOTE_GAP) * 0.5
+	_add_note_picture(NOTE_BOOK_OPEN, 0.0, y, pair)
+	_add_note_picture(NOTE_BOOK_PAGES, pair + NOTE_GAP, y, pair)
+	y += pair + NOTE_GAP
+	y = _add_note_text(NOTE_CANDLE, column, y)
+	_add_note_picture(NOTE_CANDLE_TEX, 0.0, y, column)
+	y += column + NOTE_GAP
+	y = _add_note_text(NOTE_MORTAR, column, y)
+	_add_note_picture(NOTE_MORTAR_TEX, 0.0, y, column)
+	y += column
+	_note_content.position = Vector2.ZERO
+	_note_content.size = Vector2(column, y)
+	_note_max = maxf(0.0, y - block)
+	_reset_note_scroll()
+
+
+func _note_old_height(body: Label, sign: Label, column: float) -> float:
+	var measured := _note_block(body, sign, column)
+	return measured.x + NOTE_GAP + measured.y
 
 
 func _note_block(body: Label, sign: Label, column: float) -> Vector2:
+	body.text = NOTE_BODY
+	sign.text = NOTE_SIGN
 	body.set_size(Vector2(column, 4))
 	sign.set_size(Vector2(column, 4))
 	return Vector2(body.get_minimum_size().y, sign.get_minimum_size().y)
+
+
+func _ensure_note_scroll(window: Control) -> void:
+	if _note_view != null:
+		return
+	_note_view = Control.new()
+	_note_view.name = "View"
+	_note_view.clip_contents = true
+	_note_view.mouse_filter = Control.MOUSE_FILTER_STOP
+	_note_view.gui_input.connect(_on_note_wheel)
+	window.add_child(_note_view)
+	_note_content = Control.new()
+	_note_content.name = "Content"
+	_note_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_note_view.add_child(_note_content)
+	_note_bar = Control.new()
+	_note_bar.name = "Bar"
+	_note_bar.set_script(NoteBarScript)
+	_note_bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	_note_bar.gui_input.connect(_on_note_wheel)
+	window.add_child(_note_bar)
+	_note_bar.ratio_changed.connect(_on_note_bar_ratio)
+
+
+func _place_note_label(label: Label, column: float, y: float, height: float) -> void:
+	label.position = Vector2(0.0, y)
+	label.size = Vector2(column, height)
+	label.offset_left = 0.0
+	label.offset_top = y
+	label.offset_right = column
+	label.offset_bottom = y + height
+
+
+func _clear_note_extra() -> void:
+	var extras: Array[Node] = []
+	for child in _note_content.get_children():
+		if child.name != "Body" and child.name != "Sign":
+			extras.append(child)
+	for child in extras:
+		child.free()
+
+
+func _add_note_text(text: String, column: float, y: float) -> float:
+	var source: Label = $Note/Window/View/Content/Body
+	var label := Label.new()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_override("font", source.get_theme_font("font"))
+	label.add_theme_font_size_override("font_size", source.get_theme_font_size("font_size"))
+	label.add_theme_color_override("font_color", source.get_theme_color("font_color"))
+	label.position = Vector2(0.0, y)
+	label.size = Vector2(column, 4.0)
+	_note_content.add_child(label)
+	var height := label.get_minimum_size().y
+	label.size = Vector2(column, height)
+	return y + height + 10.0
+
+
+func _add_note_picture(texture: Texture2D, x: float, y: float, side: float) -> void:
+	var rect := TextureRect.new()
+	rect.texture = texture
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.position = Vector2(x, y)
+	rect.size = Vector2(side, side)
+	_note_content.add_child(rect)
+
+
+func _on_note_wheel(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_scroll_note(-NOTE_WHEEL)
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_scroll_note(NOTE_WHEEL)
+			get_viewport().set_input_as_handled()
+
+
+func _on_note_bar_ratio(ratio: float) -> void:
+	_note_offset = ratio * _note_max
+	if _note_content != null:
+		_note_content.position.y = -_note_offset
+
+
+func _scroll_note(delta: float) -> void:
+	if _note_max <= 0.0:
+		return
+	_note_offset = clampf(_note_offset + delta, 0.0, _note_max)
+	_note_content.position.y = -_note_offset
+	_note_bar.set_ratio(_note_offset / _note_max)
+
+
+func _reset_note_scroll() -> void:
+	_note_offset = 0.0
+	if _note_content != null:
+		_note_content.position.y = 0.0
+	if _note_bar != null:
+		_note_bar.set_ratio(0.0)
 
 
 func _on_quest() -> void:
