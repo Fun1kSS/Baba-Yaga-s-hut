@@ -1,0 +1,567 @@
+[gd_scene format=3 uid="uid://7kv1j4qbfcp2"]
+
+[ext_resource type="Script" uid="uid://ctrtihrprhds8" path="res://scripts/shop.gd" id="1_shop"]
+[ext_resource type="PackedScene" path="res://prop_button.tscn" id="2_prop"]
+[ext_resource type="Texture2D" uid="uid://cp3hu07tjaihp" path="res://art/Фон.jpg" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://c6cqh1am77js4" path="res://art/Ворон.png" id="4_raven"]
+[ext_resource type="Texture2D" uid="uid://bt3ihwqgyollt" path="res://art/Задание.png" id="5_quest"]
+[ext_resource type="Texture2D" uid="uid://dhwfqbinjqlu2" path="res://art/Задание нажат.png" id="6_quest_p"]
+[ext_resource type="Texture2D" uid="uid://bqg57mtl0qin4" path="res://art/Книга.png" id="7_book"]
+[ext_resource type="Texture2D" uid="uid://b68r57c1rbasl" path="res://art/Книга нажат.png" id="8_book_p"]
+[ext_resource type="Texture2D" uid="uid://xycvyh7gti0b" path="res://art/Ступка.png" id="9_mortar"]
+[ext_resource type="Texture2D" uid="uid://calffdkshq3mc" path="res://art/Ступка нажат.png" id="10_mortar_p"]
+[ext_resource type="Texture2D" uid="uid://ctjh8krsyyjh1" path="res://art/Свеча.png" id="11_candle"]
+[ext_resource type="Texture2D" uid="uid://bhhtwb6k2x5kj" path="res://art/Свеча нажат.png" id="12_candle_p"]
+[ext_resource type="Texture2D" uid="uid://gbdfjmv7dnqw" path="res://art/Котел.png" id="13_pot"]
+[ext_resource type="Texture2D" uid="uid://bpo38mrw4heql" path="res://art/Котел нажат.png" id="14_pot_p"]
+[ext_resource type="Texture2D" uid="uid://j5lwmfqymejh" path="res://art/Мешок.png" id="15_bag"]
+[ext_resource type="Texture2D" uid="uid://cnf6pvd2ohnd3" path="res://art/Мешок нажат.png" id="16_bag_p"]
+[ext_resource type="Texture2D" uid="uid://cligjk3wx1af0" path="res://art/Монеты.png" id="17_coins"]
+[ext_resource type="Texture2D" uid="uid://d1icg5qb1cmo3" path="res://art/Мешок внутр.png" id="18_bag_in"]
+[ext_resource type="Texture2D" uid="uid://didv404oesnlw" path="res://art/Книга с рецепт.png" id="19_recipe"]
+[ext_resource type="Texture2D" uid="uid://ddolivno648f6" path="res://art/Окно речи.png" id="20_speech"]
+[ext_resource type="Texture2D" uid="uid://bld04182prkgt" path="res://art/good_day.png" id="21_good"]
+[ext_resource type="Texture2D" uid="uid://co1wov3w43mv" path="res://art/game_over.png" id="22_over"]
+[ext_resource type="Texture2D" uid="uid://casslfskxu7hp" path="res://art/Заново.png" id="23_again"]
+[ext_resource type="Texture2D" uid="uid://vxfi81pokrot" path="res://art/Заново нажат.png" id="24_again_p"]
+[ext_resource type="Texture2D" uid="uid://c08nf31rd7op6" path="res://art/Выйти.png" id="25_exit"]
+[ext_resource type="Texture2D" uid="uid://o0vgdd3awml7" path="res://art/Выйти нажат.png" id="26_exit_p"]
+[ext_resource type="Texture2D" uid="uid://dcbabtweeobqo" path="res://art/Вопрос.png" id="27_help"]
+[ext_resource type="Texture2D" uid="uid://r6fxfvj1nldu" path="res://art/Вопрос нажат.png" id="28_help_p"]
+[ext_resource type="Texture2D" uid="uid://ogwxxg7bdluf" path="res://art/Меню.png" id="29_menu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_choice"]
+bg_color = Color(0.62, 0.62, 0.62, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1, 0.1, 0.1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_choice_pressed"]
+bg_color = Color(0.4, 0.4, 0.4, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1, 0.1, 0.1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_note"]
+bg_color = Color(0.87451, 0.87451, 0.87451, 1)
+border_width_left = 8
+border_width_top = 8
+border_width_right = 8
+border_width_bottom = 8
+border_color = Color(0.06, 0.06, 0.06, 1)
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 10
+shadow_offset = Vector2(5, 7)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.82, 0.82, 0.82, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.12, 0.12, 0.12, 1)
+
+[node name="Shop" type="Node2D" unique_id=814302347]
+script = ExtResource("1_shop")
+
+[node name="Background" type="Sprite2D" parent="." unique_id=471982277]
+position = Vector2(960, 540)
+texture = ExtResource("3_bg")
+
+[node name="Guest" type="Sprite2D" parent="." unique_id=853377758]
+visible = false
+z_index = 1
+position = Vector2(960, 540)
+
+[node name="Props" type="Node2D" parent="." unique_id=878048048]
+z_index = 2
+
+[node name="Raven" type="Sprite2D" parent="Props" unique_id=2007997894]
+position = Vector2(960, 540)
+texture = ExtResource("4_raven")
+
+[node name="Quest" parent="Props" unique_id=359985940 instance=ExtResource("2_prop")]
+hitbox = Rect2(0, 0, 190, 248)
+pressed_texture = ExtResource("6_quest_p")
+
+[node name="Sprite2D" parent="Props/Quest" index="0"]
+position = Vector2(139, 162.5)
+texture = ExtResource("5_quest")
+
+[node name="Hit" parent="Props/Quest/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Help" parent="Props" unique_id=1847362930 instance=ExtResource("2_prop")]
+hitbox = Rect2(0, 0, 104, 224)
+pressed_texture = ExtResource("28_help_p")
+
+[node name="Sprite2D" parent="Props/Help" index="0"]
+position = Vector2(133, 382.99997)
+scale = Vector2(0.65384614, 0.65384614)
+texture = ExtResource("27_help")
+
+[node name="Hit" parent="Props/Help/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = -78.0
+offset_top = -125.41172
+offset_right = 91.76471
+offset_bottom = 130.00015
+
+[node name="Book" parent="Props" unique_id=581106069 instance=ExtResource("2_prop")]
+hitbox = Rect2(0, 10, 540, 357)
+pressed_texture = ExtResource("8_book_p")
+
+[node name="Sprite2D" parent="Props/Book" index="0"]
+position = Vector2(775, 818.5)
+texture = ExtResource("7_book")
+
+[node name="Hit" parent="Props/Book/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Mortar" parent="Props" unique_id=24236123 instance=ExtResource("2_prop")]
+hitbox = Rect2(20, 0, 212, 419)
+pressed_texture = ExtResource("10_mortar_p")
+
+[node name="Sprite2D" parent="Props/Mortar" index="0"]
+position = Vector2(1171, 768.5)
+texture = ExtResource("9_mortar")
+
+[node name="Hit" parent="Props/Mortar/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Candle" parent="Props" unique_id=1819825215 instance=ExtResource("2_prop")]
+hitbox = Rect2(54, 3, 113, 327)
+pressed_texture = ExtResource("12_candle_p")
+
+[node name="Sprite2D" parent="Props/Candle" index="0"]
+position = Vector2(1361.5, 763)
+texture = ExtResource("11_candle")
+
+[node name="Hit" parent="Props/Candle/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Cauldron" parent="Props" unique_id=299125380 instance=ExtResource("2_prop")]
+hitbox = Rect2(74, 0, 380, 475)
+pressed_texture = ExtResource("14_pot_p")
+
+[node name="Sprite2D" parent="Props/Cauldron" index="0"]
+position = Vector2(1638, 776.5)
+texture = ExtResource("13_pot")
+
+[node name="Hit" parent="Props/Cauldron/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Bag" parent="Props" unique_id=1444891893 instance=ExtResource("2_prop")]
+hitbox = Rect2(106, 0, 230, 294)
+pressed_texture = ExtResource("16_bag_p")
+
+[node name="Sprite2D" parent="Props/Bag" index="0"]
+position = Vector2(1723, 313.5)
+texture = ExtResource("15_bag")
+
+[node name="Hit" parent="Props/Bag/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Selected" type="Label" parent="Props/Bag/Sprite2D" index="1" unique_id=1750715980]
+offset_left = -62.0
+offset_top = 142.5
+offset_right = 168.0
+offset_bottom = 182.5
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+
+[node name="Coins" type="Sprite2D" parent="Props" unique_id=1213083885]
+position = Vector2(960, 540)
+texture = ExtResource("17_coins")
+
+[node name="Money" type="Label" parent="Props/Coins" unique_id=1516062811]
+offset_left = 630.0
+offset_top = -516.0
+offset_right = 930.0
+offset_bottom = -448.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Errors" type="Label" parent="Props/Coins" unique_id=1516062812]
+offset_left = 600.0
+offset_top = -424.0
+offset_right = 960.0
+offset_bottom = -388.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "Ошибок: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BagInterior" type="Node2D" parent="." unique_id=108240682]
+visible = false
+z_index = 20
+
+[node name="Catcher" type="Control" parent="BagInterior" unique_id=1033548436]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+
+[node name="Sprite2D" type="Sprite2D" parent="BagInterior" unique_id=1819560389]
+z_index = 1
+position = Vector2(960, 540)
+texture = ExtResource("18_bag_in")
+
+[node name="RecipeBook" type="Node2D" parent="." unique_id=45200209]
+visible = false
+z_index = 21
+
+[node name="Sprite2D" type="Sprite2D" parent="RecipeBook" unique_id=1121849088]
+position = Vector2(960, 540)
+texture = ExtResource("19_recipe")
+
+[node name="Catcher" type="Control" parent="RecipeBook" unique_id=817264966]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+
+[node name="Speech" type="Node2D" parent="." unique_id=604025998]
+visible = false
+z_index = 10
+
+[node name="Sprite2D" type="Sprite2D" parent="Speech" unique_id=616677825]
+position = Vector2(960, 540)
+texture = ExtResource("20_speech")
+
+[node name="Catcher" type="Control" parent="Speech" unique_id=1121592799]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+
+[node name="Name" type="Label" parent="Speech/Catcher" unique_id=1739051842]
+visible = false
+layout_mode = 0
+offset_left = 110.0
+offset_top = 808.0
+offset_right = 1790.0
+offset_bottom = 848.0
+theme_override_colors/font_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_font_sizes/font_size = 30
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Lines" type="Control" parent="Speech/Catcher" unique_id=1628847315]
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="Text" type="Label" parent="Speech/Catcher" unique_id=114884387]
+visible = false
+layout_mode = 0
+offset_left = 110.0
+offset_top = 835.0
+offset_right = 1790.0
+offset_bottom = 990.0
+theme_override_colors/font_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_font_sizes/font_size = 26
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Goal" type="Label" parent="." unique_id=1847362918]
+z_index = 32
+offset_top = 8.0
+offset_right = 1920.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 32
+text = "Цель: 100"
+horizontal_alignment = 1
+
+[node name="Menu" type="Control" parent="." unique_id=1847362940]
+z_index = 60
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+
+[node name="Dim" type="ColorRect" parent="Menu" unique_id=1847362941]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+color = Color(0, 0, 0, 0.55)
+
+[node name="Board" type="TextureRect" parent="Menu" unique_id=1847362942]
+layout_mode = 0
+offset_left = 370.0
+offset_top = 197.0
+offset_right = 1550.0
+offset_bottom = 884.0
+mouse_filter = 2
+texture = ExtResource("29_menu")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Start" type="Button" parent="Menu" unique_id=1847362943]
+layout_mode = 0
+offset_left = 610.0
+offset_top = 430.0
+offset_right = 1310.0
+offset_bottom = 570.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_colors/font_hover_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_font_sizes/font_size = 52
+theme_override_styles/normal = SubResource("StyleBoxFlat_choice")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_choice_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_choice")
+text = "НАЧАТЬ"
+
+[node name="Quit" type="Button" parent="Menu" unique_id=1847362944]
+layout_mode = 0
+offset_left = 610.0
+offset_top = 610.0
+offset_right = 1310.0
+offset_bottom = 750.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_colors/font_hover_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_font_sizes/font_size = 52
+theme_override_styles/normal = SubResource("StyleBoxFlat_choice")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_choice_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_choice")
+text = "ВЫХОД"
+
+[node name="DayTitle" type="Label" parent="." unique_id=1483690689]
+z_index = 30
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 12
+theme_override_font_sizes/font_size = 96
+text = "ДЕНЬ 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GoodDay" type="Node2D" parent="." unique_id=1752325615]
+visible = false
+z_index = 30
+
+[node name="Sprite2D" type="Sprite2D" parent="GoodDay" unique_id=846698927]
+position = Vector2(960, 540)
+texture = ExtResource("21_good")
+
+[node name="Praise" type="Label" parent="GoodDay" unique_id=1847362910]
+offset_left = 520.0
+offset_top = 640.0
+offset_right = 1400.0
+offset_bottom = 800.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Catcher" type="Control" parent="GoodDay" unique_id=993449892]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+
+[node name="GameOver" type="Sprite2D" parent="." unique_id=1348478941]
+visible = false
+z_index = 30
+position = Vector2(960, 540)
+texture = ExtResource("22_over")
+
+[node name="Restart" parent="." unique_id=1197488860 instance=ExtResource("2_prop")]
+visible = false
+z_index = 31
+hitbox = Rect2(0, 27, 306, 93)
+pressed_texture = ExtResource("24_again_p")
+
+[node name="Sprite2D" parent="Restart" index="0"]
+position = Vector2(944, 728)
+texture = ExtResource("23_again")
+
+[node name="Hit" parent="Restart/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Exit" parent="." unique_id=1055546754 instance=ExtResource("2_prop")]
+z_index = 35
+position = Vector2(400.5, 70)
+hitbox = Rect2(0, 0, 237, 76)
+pressed_texture = ExtResource("26_exit_p")
+
+[node name="Sprite2D" parent="Exit" index="0"]
+position = Vector2(0, 0)
+texture = ExtResource("25_exit")
+
+[node name="Hit" parent="Exit/Sprite2D" index="0"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Carry" type="Node2D" parent="." unique_id=1904412201]
+visible = false
+z_index = 8
+
+[node name="Shadow" type="Sprite2D" parent="Carry" unique_id=1904412202]
+modulate = Color(0, 0, 0, 0.85)
+position = Vector2(3, 3)
+scale = Vector2(0.48, 0.48)
+
+[node name="Icon" type="Sprite2D" parent="Carry" unique_id=1904412203]
+scale = Vector2(0.48, 0.48)
+
+[node name="GivePotion" type="Button" parent="." unique_id=1904412204]
+visible = false
+z_index = 12
+offset_left = 625.0
+offset_top = 573.0
+offset_right = 925.0
+offset_bottom = 629.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_colors/font_pressed_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_colors/font_hover_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_choice")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_choice_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_choice")
+text = "Отдать зелье"
+
+[node name="Note" type="Control" parent="." unique_id=1847362931]
+process_mode = 3
+visible = false
+z_index = 28
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="Catcher" type="Control" parent="Note" unique_id=1847362932]
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+
+[node name="Window" type="Panel" parent="Note" unique_id=1847362933]
+layout_mode = 0
+offset_left = 560.0
+offset_top = 250.0
+offset_right = 1360.0
+offset_bottom = 1050.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_note")
+
+[node name="Body" type="Label" parent="Note/Window" unique_id=1847362934]
+layout_mode = 0
+offset_left = 44.0
+offset_top = 44.0
+offset_right = 756.0
+offset_bottom = 400.0
+theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_font_sizes/font_size = 32
+text = "Зелья готовятся по просьбе гостя нашего. Рецепт я оставила в книге, ингредиенты ищи в мешке!
+
+Когда свечу используешь — смотри, чтобы ничего не перегорело, а когда в ступке мелешь — перетирай везде, где увидишь слишком крупные крупицы."
+autowrap_mode = 3
+
+[node name="Sign" type="Label" parent="Note/Window" unique_id=1847362935]
+layout_mode = 0
+offset_left = 44.0
+offset_top = 420.0
+offset_right = 756.0
+offset_bottom = 470.0
+theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_font_sizes/font_size = 32
+text = "- Баба Яга"
+horizontal_alignment = 2
+
+[node name="ExitConfirm" type="Control" parent="." unique_id=312069131]
+process_mode = 3
+visible = false
+z_index = 50
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+
+[node name="Window" type="Panel" parent="ExitConfirm" unique_id=2002770000]
+layout_mode = 0
+offset_left = 660.0
+offset_top = 390.0
+offset_right = 1260.0
+offset_bottom = 690.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Question" type="Label" parent="ExitConfirm/Window" unique_id=156204782]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 36.0
+offset_right = 580.0
+offset_bottom = 130.0
+theme_override_colors/font_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_font_sizes/font_size = 48
+text = "Ты уверен?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Yes" type="Button" parent="ExitConfirm/Window" unique_id=1681422037]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 160.0
+offset_right = 250.0
+offset_bottom = 240.0
+theme_override_colors/font_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_colors/font_pressed_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_colors/font_hover_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("StyleBoxFlat_choice")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_choice_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_choice")
+text = "Да"
+
+[node name="No" type="Button" parent="ExitConfirm/Window" unique_id=637173981]
+layout_mode = 0
+offset_left = 350.0
+offset_top = 160.0
+offset_right = 550.0
+offset_bottom = 240.0
+theme_override_colors/font_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_colors/font_pressed_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_colors/font_hover_color = Color(0.1, 0.1, 0.1, 1)
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("StyleBoxFlat_choice")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_choice_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_choice")
+text = "Отмена"
+
+[editable path="Props/Quest"]
+[editable path="Props/Help"]
+[editable path="Props/Book"]
+[editable path="Props/Mortar"]
+[editable path="Props/Candle"]
+[editable path="Props/Cauldron"]
+[editable path="Props/Bag"]
+[editable path="Restart"]
+[editable path="Exit"]
