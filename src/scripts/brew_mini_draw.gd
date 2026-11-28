@@ -7,9 +7,10 @@ func _draw() -> void:
 		if mini._cue_button != 0:
 			_mouse(mini._cue_pos, mini._cue_button == 1)
 	elif mini._mode == "candle":
-		draw_arc(mini.FLAME, mini.FLAME_RADIUS, 0.0, TAU, 40, Color(0.08, 0.08, 0.08, 0.9), 3.0)
-		_bar(Vector2(1488, 600), "Перегрев", float(mini._heat), Color(0.72, 0.28, 0.22))
-		_bar(Vector2(1488, 662), "Готовность", float(mini._cooked), Color(0.32, 0.52, 0.3))
+		var flame: Vector2 = to_local(mini._flame_point())
+		draw_arc(flame, mini.FLAME_RADIUS, 0.0, TAU, 40, Color(0.08, 0.08, 0.08, 0.9), 3.0)
+		_bar(flame + mini.BAR_HEAT, "Перегрев", float(mini._heat), Color(0.72, 0.28, 0.22))
+		_bar(flame + mini.BAR_READY, "Готовность", float(mini._cooked), Color(0.32, 0.52, 0.3))
 
 
 func _mouse(at: Vector2, left_down: bool) -> void:

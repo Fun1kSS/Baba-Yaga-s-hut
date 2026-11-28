@@ -5,6 +5,7 @@ signal clicked
 
 @export var hitbox: Rect2
 @export var pressed_texture: Texture2D
+@export var solid := false
 
 var enabled := false:
 	set(value):
@@ -36,6 +37,15 @@ func _ready() -> void:
 	_apply_enabled()
 
 
+func contains_point(point: Vector2) -> bool:
+	if hit == null or not hit.get_global_rect().has_point(point):
+		return false
+	if solid:
+		return true
+	var local := hit.get_global_transform().affine_inverse() * point
+	return _visible_pixel(local)
+
+
 func _visible_pixel(local_on_hit: Vector2) -> bool:
 	if _image == null:
 		return true
@@ -43,7 +53,7 @@ func _visible_pixel(local_on_hit: Vector2) -> bool:
 	var x := int(pixel.x)
 	var y := int(pixel.y)
 	if x < 0 or y < 0 or x >= _image.get_width() or y >= _image.get_height():
-		return false
+		return true
 	return _image.get_pixel(x, y).a > 0.08
 
 
@@ -76,7 +86,7 @@ func _on_hit_input(event: InputEvent) -> void:
 	if not enabled:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if not _visible_pixel(hit.get_local_mouse_position()):
+		if not solid and not _visible_pixel(hit.get_local_mouse_position()):
 			return
 		_holding = true
 		if pressed_texture:
@@ -88,7 +98,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		var local := hit.get_local_mouse_position()
-		var inside := enabled and Rect2(Vector2.ZERO, hit.size).has_point(local) and _visible_pixel(local)
+		var inside := enabled and Rect2(Vector2.ZERO, hit.size).has_point(local) and (solid or _visible_pixel(local))
 		_holding = false
 		_restore()
 		if inside:

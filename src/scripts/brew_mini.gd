@@ -5,9 +5,10 @@ signal finished(tool_id: String)
 
 const PESTLE := preload("res://art/pestle.png")
 const LAYER_DRAW := preload("res://scripts/brew_mini_draw.gd")
-const BOWL := Vector2(1178, 699)
-const FLAME := Vector2(1410, 626)
+const FLAME_LOCAL := Vector2(4.57, -86.68)
 const FLAME_RADIUS := 46.0
+const BAR_HEAT := Vector2(78, -26)
+const BAR_READY := Vector2(78, 36)
 const CUE_LIFE := 2.5
 const CUE_GAP := 0.4
 const GRIND_TIME := 10.0
@@ -67,7 +68,7 @@ func start(tool_id: String, herb: Texture2D) -> void:
 	if tool_id == "instr_a":
 		_mode = "mortar"
 		_next_cue = 0.45
-		_herb.position = BOWL
+		_herb.global_position = _mortar_point(_bowl_local())
 		_herb.scale = Vector2(0.36, 0.36)
 		_pestle.visible = true
 	else:
@@ -131,7 +132,7 @@ func _advance(delta: float, pointer: Vector2, holding: bool) -> void:
 				_spawn_cue()
 	else:
 		_herb.global_position = pointer + Vector2(48, 40)
-		var over := pointer.distance_to(FLAME) <= FLAME_RADIUS
+		var over := pointer.distance_to(_flame_point()) <= FLAME_RADIUS
 		if holding and over:
 			_heat += HEAT_RATE * delta
 			_cooked += READY_RATE * delta
@@ -184,7 +185,31 @@ func _move_pestle(pointer: Vector2, _delta: float) -> void:
 func _spawn_cue() -> void:
 	_cue_button = 1 if randi() % 2 == 0 else 2
 	_cue_left = CUE_LIFE
-	_cue_pos = BOWL + Vector2(randf_range(-50, 50), randf_range(-34, 30))
+	var sprite := _mortar_sprite()
+	var size := sprite.texture.get_size()
+	var local := _bowl_local() + Vector2(randf_range(-size.x, size.x) * 0.22, randf_range(-size.y * 0.08, size.y * 0.07))
+	_cue_pos = sprite.to_global(local)
+
+
+func _mortar_sprite() -> Sprite2D:
+	return get_parent().get_node("Props/Mortar/Sprite2D") as Sprite2D
+
+
+func _candle_sprite() -> Sprite2D:
+	return get_parent().get_node("Props/Candle/Sprite2D") as Sprite2D
+
+
+func _flame_point() -> Vector2:
+	return _candle_sprite().to_global(FLAME_LOCAL)
+
+
+func _bowl_local() -> Vector2:
+	var size := _mortar_sprite().texture.get_size()
+	return Vector2(0.0, size.y * (0.28 - 0.5))
+
+
+func _mortar_point(local: Vector2) -> Vector2:
+	return _mortar_sprite().to_global(local)
 
 
 func _clear_cue() -> void:

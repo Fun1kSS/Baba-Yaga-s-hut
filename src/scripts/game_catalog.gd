@@ -14,11 +14,11 @@ const INGREDIENTS := {
 }
 
 const BAG_CELLS: Array = [
-	[Rect2(532, 313, 244, 244), "ingr_b"],
-	[Rect2(788, 313, 244, 244), "ingr_d"],
-	[Rect2(1044, 313, 244, 244), "ingr_c"],
-	[Rect2(532, 569, 244, 244), "ingr_f"],
-	[Rect2(788, 569, 244, 244), "ingr_a"],
+	[Rect2(547, 309, 254, 254), "ingr_c"],
+	[Rect2(845, 309, 254, 254), "ingr_a"],
+	[Rect2(1147, 311, 254, 254), "ingr_f"],
+	[Rect2(547, 625, 254, 254), "ingr_b"],
+	[Rect2(845, 625, 254, 254), "ingr_d"],
 ]
 
 const RAVEN_WORDS: PackedStringArray = [
@@ -32,27 +32,27 @@ const GUESTS := {
 	"g1": {
 		"name": "Добрыня Н.",
 		"texture": preload("res://art/Добрыня Н..png"),
-		"bbox": Rect2(1282, 137, 558, 581),
+		"bbox": Rect2(1308, 21, 609, 646),
 	},
 	"g2": {
 		"name": "Илья М.",
 		"texture": preload("res://art/Илья М..png"),
-		"bbox": Rect2(649, 68, 593, 652),
+		"bbox": Rect2(10, 15, 609, 646),
 	},
 	"g3": {
 		"name": "Иван Д.",
 		"texture": preload("res://art/Иван Д..png"),
-		"bbox": Rect2(1078, 168, 353, 556),
+		"bbox": Rect2(732, 4, 344, 529),
 	},
 	"g4": {
 		"name": "Емеля Щ.",
 		"texture": preload("res://art/Емеля Щ..png"),
-		"bbox": Rect2(216, 117, 654, 603),
+		"bbox": Rect2(505, 499, 344, 576),
 	},
 	"g5": {
 		"name": "Алёнушка С.",
 		"texture": preload("res://art/Аленушка С..png"),
-		"bbox": Rect2(388, 210, 241, 522),
+		"bbox": Rect2(901, 564, 227, 503),
 	},
 }
 

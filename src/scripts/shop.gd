@@ -39,6 +39,19 @@ const DAY_PRAISE: PackedStringArray = [
 	"КАРРРкой же ты молодец.",
 	"Ты КАРнечно не Баба Яга, но зелья варишь лучше неё.",
 ]
+const STORY_DAYS := 3
+const CINEMA_FADE := 1.8
+const KASHCHEI_BBOX := Rect2(1075, 8, 232, 652)
+const KASHCHEI_TEX := preload("res://art/Кащей.png")
+const INTRO_TEX := preload("res://art/начальная заставка.png")
+const BAD_ENDING_TEX := preload("res://art/плохая концовка.png")
+const GOOD_ENDING_TEX := preload("res://art/хорошая концовка.png")
+const KASHCHEI_LINES: PackedStringArray = [
+	"День окончился, я пришел за своей долей.",
+	"Итак, я пришел за деньгами.",
+	"Пора рассчитаться. Монеты на стол.",
+	"Срок вышел. Я заберу то, что мне причитается.",
+]
 const RAVEN_TIPS: PackedStringArray = [
 	"Если забыл рецепт — посмотри в книгу.",
 	"Постарайся не делать ошибок.",
@@ -61,11 +74,20 @@ const CARRY_TEXTURES := {
 }
 const CRUMBS_TEXTURE := preload("res://art/crumbs.png")
 const ASH_TEXTURE := preload("res://art/ash.png")
+const BAG_EMPTY := preload("res://art/bag/empty.png")
+const BAG_ART := {
+	"ingr_a": [preload("res://art/bag/ingr_a.png"), preload("res://art/bag/ingr_a_pressed.png")],
+	"ingr_b": [preload("res://art/bag/ingr_b.png"), preload("res://art/bag/ingr_b_pressed.png")],
+	"ingr_c": [preload("res://art/bag/ingr_c.png"), preload("res://art/bag/ingr_c_pressed.png")],
+	"ingr_d": [preload("res://art/bag/ingr_d.png"), preload("res://art/bag/ingr_d_pressed.png")],
+	"ingr_f": [preload("res://art/bag/ingr_f.png"), preload("res://art/bag/ingr_f_pressed.png")],
+}
 const BrewMiniScript := preload("res://scripts/brew_mini.gd")
 
 var phase := Phase.TITLE
 var day := 1
 var money := 0
+var earned := 0
 var goal := DAY_GOAL
 var guests := 0
 var bad_number := 0
@@ -82,14 +104,29 @@ var _pot_home := Vector2.ZERO
 var _pot_shaking := false
 var _after_speech: Callable = Callable()
 var _cells: Dictionary = {}
+var _bag_icons: Dictionary = {}
+var _music: AudioStreamPlayer
+var _mortar_sound: AudioStreamPlayer
+var _candle_sound: AudioStreamPlayer
+var _pot_sound: AudioStreamPlayer
+var _guest_sound: AudioStreamPlayer
 var _awaiting_pot := false
 var _potion_ready := false
 var _mini: Node
 var _mini_tool := ""
 var _mini_hint := false
 var _raven_image: Image
+var _hover_label: Label
 var _last_raven_tip := -1
 var _last_praise := -1
+var _last_kashchei := -1
+var _cinema: Control
+var _cinema_picture: TextureRect
+var _cinema_caption: Label
+var _cinema_earned: Label
+var _cinema_tween: Tween
+var _cinema_shown := false
+var _after_cinema := Callable()
 var _note_view: Control
 var _note_content: Control
 var _note_bar
@@ -129,8 +166,12 @@ func _ready() -> void:
 	_mini.finished.connect(_on_mini_finished)
 	_connect_ui()
 	_build_cells()
+	_setup_audio()
 	_layout_note()
 	_setup_raven()
+	_setup_cinema()
+	_setup_hover()
+	_raise_recipe_book()
 	_set_tools_enabled(false)
 	$Exit.enabled = true
 	$Exit.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -164,9 +205,18 @@ func _connect_ui() -> void:
 
 func _build_cells() -> void:
 	var host: Sprite2D = $BagInterior/Sprite2D
+	var empty := Sprite2D.new()
+	empty.texture = BAG_EMPTY
+	empty.centered = true
+	host.add_child(empty)
 	for entry in GameCatalog.BAG_CELLS:
 		var rect: Rect2 = entry[0]
 		var ingredient: String = entry[1]
+		var icon := Sprite2D.new()
+		icon.texture = BAG_ART[ingredient][0]
+		icon.centered = true
+		host.add_child(icon)
+		_bag_icons[ingredient] = icon
 		var cell := ColorRect.new()
 		cell.color = Color(1, 1, 1, 0)
 		cell.position = rect.position - GameCatalog.VIEW_CENTER
@@ -180,6 +230,45 @@ func _build_cells() -> void:
 		_cells[ingredient] = cell
 
 
+func _setup_audio() -> void:
+	_music = _make_player("res://audio/фоновая музыка.mp3", true)
+	_mortar_sound = _make_player("res://audio/звук ступки.mp3", true)
+	_candle_sound = _make_player("res://audio/свеча миниигра.mp3", true)
+	_pot_sound = _make_player("res://audio/котел кипит.mp3", true)
+	_guest_sound = _make_player("res://audio/гость зашел.mp3", false)
+	_music.play()
+
+
+func _make_player(path: String, looping: bool) -> AudioStreamPlayer:
+	var stream := (load(path) as AudioStreamMP3).duplicate() as AudioStreamMP3
+	stream.loop = looping
+	var player := AudioStreamPlayer.new()
+	player.stream = stream
+	add_child(player)
+	return player
+
+
+func _announce_guest(gap: float, token: int) -> void:
+	var delay := maxf(gap - 1.0, 0.0)
+	if delay > 0.0 and not await _wait(delay, token):
+		return
+	if _current(token):
+		_guest_sound.play()
+
+
+func _play_mini_sound(tool_id: String) -> void:
+	_stop_mini_sound()
+	var player := _mortar_sound if tool_id == "instr_a" else _candle_sound
+	player.play()
+
+
+func _stop_mini_sound() -> void:
+	if _mortar_sound:
+		_mortar_sound.stop()
+	if _candle_sound:
+		_candle_sound.stop()
+
+
 func _show_title() -> void:
 	phase = Phase.TITLE
 	_close_panels()
@@ -190,7 +279,10 @@ func _show_title() -> void:
 	restart.enabled = false
 	guest.visible = false
 	_reset_brew()
-	day_title.text = "ДЕНЬ %d" % day
+	if day == STORY_DAYS + 1:
+		day_title.text = "Бесконечный режим!\nДЕНЬ %d" % day
+	else:
+		day_title.text = "ДЕНЬ %d" % day
 	day_title.visible = true
 	_mini_hint = false
 	$Speech/Catcher.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -210,6 +302,10 @@ func _open_menu() -> void:
 
 func _on_menu_start() -> void:
 	$Menu.visible = false
+	_play_cinema("intro", _enter_shop)
+
+
+func _enter_shop() -> void:
 	day_title.visible = true
 	goal_label.visible = true
 	money_label.visible = true
@@ -235,6 +331,7 @@ func _start_day() -> void:
 	_invalidate()
 	var token := _token
 	_reset_day()
+	_announce_guest(FIRST_GAP_SEC, token)
 	await _wait(FIRST_GAP_SEC, token)
 	if not _current(token):
 		return
@@ -263,6 +360,7 @@ func _visit_loop(token: int) -> void:
 		if guests >= 5:
 			break
 		phase = Phase.GAP
+		_announce_guest(NEXT_GAP_SEC, token)
 		await _wait(NEXT_GAP_SEC, token)
 		if not _current(token):
 			return
@@ -329,6 +427,7 @@ func _begin_mini(tool_id: String) -> void:
 	_close_panels()
 	_mini.start(tool_id, tex)
 	_mini_tool = tool_id
+	_play_mini_sound(tool_id)
 	_show_mini_hint(tool_id)
 
 
@@ -336,6 +435,7 @@ func _on_mini_finished(tool_id: String) -> void:
 	if phase != Phase.MINI:
 		return
 	phase = Phase.COOK
+	_stop_mini_sound()
 	_hide_mini_hint()
 	_awaiting_pot = true
 	_show_processed(tool_id)
@@ -347,12 +447,13 @@ func _on_mini_missed() -> void:
 		return
 	bad_number += 1
 	_update_money()
+	_stop_mini_sound()
 	if bad_number >= 4:
 		_mini.abort()
 		_resolve_failure()
 		return
 	_mini.suspend()
-	_show_speech(GameCatalog.raven_line(), _resume_mini)
+	_show_speech("Ворон:\n%s" % GameCatalog.raven_line(), _resume_mini)
 
 
 func _resume_mini() -> void:
@@ -360,6 +461,7 @@ func _resume_mini() -> void:
 		return
 	phase = Phase.MINI
 	_mini.resume()
+	_play_mini_sound(_mini_tool)
 	_show_mini_hint(_mini_tool)
 
 
@@ -384,6 +486,7 @@ func _shake_cauldron() -> void:
 	_pot_shake = create_tween()
 	_pot_shake.tween_method(_pot_offset.bind(sprite, amp), 0.0, 4.5, 4.5)
 	_pot_shake.finished.connect(_on_pot_shake_finished)
+	_pot_sound.play()
 
 
 func _pot_offset(time: float, sprite: Sprite2D, amp: float) -> void:
@@ -413,6 +516,8 @@ func _stop_pot_shake() -> void:
 		($Props/Cauldron/Sprite2D as Sprite2D).position = _pot_home
 	if running and is_instance_valid(running):
 		running.kill()
+	if _pot_sound:
+		_pot_sound.stop()
 
 
 func _fail_step() -> void:
@@ -424,7 +529,7 @@ func _fail_step() -> void:
 	if bad_number >= 4:
 		_resolve_failure()
 	else:
-		_show_speech(GameCatalog.raven_line(), _resume_cook)
+		_show_speech("Ворон:\n%s" % GameCatalog.raven_line(), _resume_cook)
 
 
 func _on_give_potion() -> void:
@@ -448,7 +553,9 @@ func _prop(tool_id: String) -> PropButton:
 func _resolve_success() -> void:
 	phase = Phase.TALK
 	_close_panels()
-	money += GameCatalog.payout(potion_id, bad_number)
+	var pay := GameCatalog.payout(potion_id, bad_number)
+	money += pay
+	earned += pay
 	_update_money()
 	_show_speech(GameCatalog.success_line(guest_id), _begin_leave)
 
@@ -488,19 +595,160 @@ func _finish_day() -> void:
 	$Speech/Catcher.mouse_filter = Control.MOUSE_FILTER_STOP
 	guest.visible = false
 	_reset_brew()
+	_kashchei_visit(_token)
+
+
+func _kashchei_visit(token: int) -> void:
+	guest.texture = KASHCHEI_TEX
+	var stand := _stand_position(KASHCHEI_BBOX)
+	guest.position = _off_left(KASHCHEI_BBOX, stand.y)
+	guest.visible = true
+	phase = Phase.ENTER
+	if not await _slide_guest(stand, token):
+		return
+	_last_kashchei = _next_line(KASHCHEI_LINES, _last_kashchei)
+	_show_speech("Кащей\n%s" % KASHCHEI_LINES[_last_kashchei], func() -> void: _kashchei_leave(token))
+
+
+func _kashchei_leave(token: int) -> void:
+	if not _current(token):
+		return
+	phase = Phase.LEAVE
+	if not await _slide_guest(_off_right(KASHCHEI_BBOX, guest.position.y), token):
+		return
+	guest.visible = false
+	if _current(token):
+		_resolve_day()
+
+
+func _resolve_day() -> void:
+	var story := day <= STORY_DAYS
 	if money >= goal:
 		money -= goal
 		goal += DAY_GOAL_STEP
 		_update_money()
-		phase = Phase.CLEAR
-		_last_praise = _next_line(DAY_PRAISE, _last_praise)
-		$GoodDay/Praise.text = "ВОРОН: %s" % DAY_PRAISE[_last_praise]
-		good_day.visible = true
+		if story and day == STORY_DAYS:
+			phase = Phase.OVER
+			_play_cinema("good", _show_good_day)
+		else:
+			_show_good_day()
+	elif story:
+		phase = Phase.OVER
+		_play_cinema("bad", _return_to_menu)
 	else:
 		phase = Phase.OVER
 		game_over.visible = true
 		restart.visible = true
 		restart.enabled = true
+
+
+func _show_good_day() -> void:
+	phase = Phase.CLEAR
+	_last_praise = _next_line(DAY_PRAISE, _last_praise)
+	$GoodDay/Praise.text = "Ворон:\n%s" % DAY_PRAISE[_last_praise]
+	good_day.visible = true
+
+
+func _return_to_menu() -> void:
+	_invalidate()
+	day = 1
+	money = 0
+	earned = 0
+	goal = DAY_GOAL
+	game_over.visible = false
+	good_day.visible = false
+	restart.visible = false
+	speech.visible = false
+	_reset_brew()
+	_update_money()
+	_show_title()
+	_open_menu()
+
+
+func _setup_cinema() -> void:
+	var root := Control.new()
+	root.name = "Cinema"
+	root.position = Vector2.ZERO
+	root.size = Vector2(1920, 1080)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.z_index = 80
+	root.z_as_relative = false
+	root.visible = false
+	root.gui_input.connect(_on_cinema_input)
+	var black := ColorRect.new()
+	black.color = Color.BLACK
+	black.position = Vector2.ZERO
+	black.size = Vector2(1920, 1080)
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(black)
+	_cinema_picture = TextureRect.new()
+	_cinema_picture.position = Vector2.ZERO
+	_cinema_picture.size = Vector2(1920, 1080)
+	_cinema_picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_cinema_picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_cinema_picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_cinema_picture)
+	_cinema_caption = Label.new()
+	_cinema_caption.text = "Хорошая концовка"
+	_cinema_caption.position = Vector2.ZERO
+	_cinema_caption.size = Vector2(1920, 1080)
+	_cinema_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_cinema_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_cinema_caption.add_theme_font_size_override("font_size", 72)
+	_cinema_caption.add_theme_color_override("font_color", Color.WHITE)
+	_cinema_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cinema_caption.visible = false
+	root.add_child(_cinema_caption)
+	_cinema_earned = Label.new()
+	_cinema_earned.position = Vector2(958, 688)
+	_cinema_earned.size = Vector2(220, 28)
+	_cinema_earned.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_cinema_earned.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cinema_earned.add_theme_font_size_override("font_size", 22)
+	_cinema_earned.add_theme_color_override("font_color", Color(0.1, 0.08, 0.07))
+	_cinema_earned.visible = false
+	_cinema_picture.add_child(_cinema_earned)
+	add_child(root)
+	_cinema = root
+
+
+func _play_cinema(kind: String, then: Callable) -> void:
+	_after_cinema = then
+	_cinema_shown = false
+	var fading: CanvasItem
+	_cinema_caption.visible = false
+	_cinema_picture.visible = true
+	_cinema_earned.visible = kind == "good"
+	if kind == "good":
+		_cinema_picture.texture = GOOD_ENDING_TEX
+		_cinema_earned.text = str(earned)
+	else:
+		_cinema_picture.texture = INTRO_TEX if kind == "intro" else BAD_ENDING_TEX
+	_cinema_picture.modulate.a = 0.0
+	fading = _cinema_picture
+	_cinema.visible = true
+	if _cinema_tween and _cinema_tween.is_valid():
+		_cinema_tween.kill()
+	_cinema_tween = create_tween()
+	_cinema_tween.tween_property(fading, "modulate:a", 1.0, CINEMA_FADE)
+	_cinema_tween.finished.connect(func() -> void: _cinema_shown = true, CONNECT_ONE_SHOT)
+
+
+func _on_cinema_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed):
+		return
+	if not _cinema_shown:
+		if _cinema_tween and _cinema_tween.is_valid():
+			_cinema_tween.kill()
+		_cinema_picture.modulate.a = 1.0
+		_cinema_caption.modulate.a = 1.0
+		_cinema_shown = true
+		return
+	_cinema.visible = false
+	var then := _after_cinema
+	_after_cinema = Callable()
+	if then.is_valid():
+		then.call()
 
 
 func _on_good_day_input(event: InputEvent) -> void:
@@ -515,6 +763,7 @@ func _on_good_day_input(event: InputEvent) -> void:
 func _on_exit() -> void:
 	if note.visible:
 		note.visible = false
+	_hover_label.visible = false
 	$ExitConfirm.visible = true
 	get_tree().paused = true
 
@@ -532,6 +781,7 @@ func _on_restart() -> void:
 	_invalidate()
 	day = 1
 	money = 0
+	earned = 0
 	goal = DAY_GOAL
 	_show_title()
 
@@ -546,8 +796,10 @@ func _on_help() -> void:
 		return
 	bag_interior.visible = false
 	recipe_book.visible = false
+	_hover_label.visible = false
 	_reset_note_scroll()
 	note.visible = true
+	_music.process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().paused = true
 
 
@@ -565,6 +817,7 @@ func _close_note() -> void:
 	note.visible = false
 	if not $ExitConfirm.visible:
 		get_tree().paused = false
+	_music.process_mode = Node.PROCESS_MODE_INHERIT
 
 
 func _layout_note() -> void:
@@ -749,7 +1002,17 @@ func _on_book() -> void:
 	if phase != Phase.COOK:
 		return
 	bag_interior.visible = false
+	_raise_recipe_book()
 	recipe_book.visible = true
+
+
+func _raise_recipe_book() -> void:
+	recipe_book.z_as_relative = false
+	recipe_book.z_index = 100
+	$RecipeBook/Sprite2D.z_as_relative = false
+	$RecipeBook/Sprite2D.z_index = 100
+	$RecipeBook/Catcher.z_as_relative = false
+	$RecipeBook/Catcher.z_index = 101
 
 
 func _on_recipe_input(event: InputEvent) -> void:
@@ -971,7 +1234,7 @@ func _layout_speech(speaker: String, body: String) -> void:
 		var label := Label.new()
 		label.text = lines[i]
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_FILL if i < lines.size() - 1 else HORIZONTAL_ALIGNMENT_LEFT
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.add_theme_font_size_override("font_size", body_size)
 		label.add_theme_color_override("font_color", body_color)
 		label.position = Vector2(x, y)
@@ -982,6 +1245,84 @@ func _layout_speech(speaker: String, body: String) -> void:
 func _process(_delta: float) -> void:
 	if carry.visible:
 		carry.global_position = get_global_mouse_position() + Vector2(56, 48)
+	_update_hover()
+
+
+func _setup_hover() -> void:
+	_hover_label = Label.new()
+	_hover_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hover_label.z_as_relative = false
+	_hover_label.z_index = 55
+	_hover_label.add_theme_font_size_override("font_size", 22)
+	_hover_label.add_theme_color_override("font_color", Color.WHITE)
+	_hover_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_hover_label.add_theme_constant_override("outline_size", 6)
+	_hover_label.visible = false
+	add_child(_hover_label)
+
+
+func _update_hover() -> void:
+	var title := ""
+	if not _hover_blocked():
+		var mouse := get_global_mouse_position()
+		title = _bag_hover(mouse) if bag_interior.visible else _table_hover(mouse)
+	if title == "":
+		_hover_label.visible = false
+		return
+	_hover_label.text = title
+	_hover_label.size = _hover_label.get_minimum_size()
+	var mouse := get_global_mouse_position()
+	var pos := mouse + Vector2(16, 28)
+	if pos.x + _hover_label.size.x > 1904.0:
+		pos.x = mouse.x - _hover_label.size.x - 12.0
+	if pos.y + _hover_label.size.y > 1064.0:
+		pos.y = mouse.y - _hover_label.size.y - 12.0
+	_hover_label.position = pos
+	_hover_label.visible = true
+
+
+func _hover_blocked() -> bool:
+	return $Menu.visible or _cinema.visible or day_title.visible or note.visible or recipe_book.visible or good_day.visible or game_over.visible or $ExitConfirm.visible
+
+
+func _table_hover(mouse: Vector2) -> String:
+	var exit_button := $Exit as PropButton
+	if exit_button.visible and exit_button.contains_point(mouse):
+		return "Выйти из игры"
+	for entry in [["Help", "Записка"], ["Quest", "Задание"], ["Bag", "Мешок"], ["Cauldron", "Котел"], ["Candle", "Свеча"], ["Mortar", "Ступка"], ["Book", "Книга"]]:
+		var prop := $Props.get_node(entry[0]) as PropButton
+		if prop.contains_point(mouse):
+			return entry[1]
+	if _raven_contains(mouse):
+		return "Ворон"
+	return ""
+
+
+func _bag_hover(mouse: Vector2) -> String:
+	for ingredient in _cells:
+		var cell: Control = _cells[ingredient]
+		if cell.get_global_rect().has_point(mouse):
+			return _capital(GameCatalog.ingredient_name(ingredient))
+	return ""
+
+
+func _raven_contains(mouse: Vector2) -> bool:
+	var hit := $Props/Raven/Hit as Control
+	if hit == null or not hit.get_global_rect().has_point(mouse):
+		return false
+	var local := hit.get_global_transform().affine_inverse() * mouse
+	var pixel := hit.position + local + ($Props/Raven as Sprite2D).texture.get_size() * 0.5
+	var x := int(pixel.x)
+	var y := int(pixel.y)
+	if x < 0 or y < 0 or x >= _raven_image.get_width() or y >= _raven_image.get_height():
+		return false
+	return _raven_image.get_pixel(x, y).a > 0.08
+
+
+func _capital(name: String) -> String:
+	if name.is_empty():
+		return name
+	return name.substr(0, 1).to_upper() + name.substr(1)
 
 
 func _set_selected(ingredient: String) -> void:
@@ -1025,6 +1366,7 @@ func _reset_brew() -> void:
 	if _mini:
 		_mini.abort()
 	_stop_pot_shake()
+	_stop_mini_sound()
 	if is_node_ready():
 		give_potion.visible = false
 		_set_selected("")
@@ -1033,8 +1375,9 @@ func _reset_brew() -> void:
 func _refresh_cells() -> void:
 	for ingredient in _cells:
 		var cell: ColorRect = _cells[ingredient]
-		var lit: bool = ingredient == selected
-		cell.color = Color(1, 1, 1, 0.28 if lit else 0.0)
+		cell.color = Color(1, 1, 1, 0)
+		var icon: Sprite2D = _bag_icons[ingredient]
+		icon.texture = BAG_ART[ingredient][1] if ingredient == selected else BAG_ART[ingredient][0]
 
 
 func _set_tools_enabled(on: bool) -> void:

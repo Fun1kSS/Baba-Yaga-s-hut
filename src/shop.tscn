@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://ctrtihrprhds8" path="res://scripts/shop.gd" id="1_shop"]
 [ext_resource type="PackedScene" path="res://prop_button.tscn" id="2_prop"]
-[ext_resource type="Texture2D" uid="uid://cp3hu07tjaihp" path="res://art/Фон.jpg" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://cc784urdda2ws" path="res://art/Фон.png" id="3_bg"]
 [ext_resource type="Texture2D" uid="uid://c6cqh1am77js4" path="res://art/Ворон.png" id="4_raven"]
 [ext_resource type="Texture2D" uid="uid://bt3ihwqgyollt" path="res://art/Задание.png" id="5_quest"]
 [ext_resource type="Texture2D" uid="uid://dhwfqbinjqlu2" path="res://art/Задание нажат.png" id="6_quest_p"]
@@ -29,6 +29,10 @@
 [ext_resource type="Texture2D" uid="uid://dcbabtweeobqo" path="res://art/Вопрос.png" id="27_help"]
 [ext_resource type="Texture2D" uid="uid://r6fxfvj1nldu" path="res://art/Вопрос нажат.png" id="28_help_p"]
 [ext_resource type="Texture2D" uid="uid://ogwxxg7bdluf" path="res://art/Меню.png" id="29_menu"]
+[ext_resource type="Texture2D" uid="uid://dvhqupetxixv4" path="res://art/menu/continue.png" id="30_go"]
+[ext_resource type="Texture2D" uid="uid://b4l2xxvr3q6fw" path="res://art/menu/continue_pressed.png" id="31_go_p"]
+[ext_resource type="Texture2D" uid="uid://b1xoaxbkv7gu2" path="res://art/menu/quit.png" id="32_quit"]
+[ext_resource type="Texture2D" uid="uid://ctebvvgmem6sj" path="res://art/menu/quit_pressed.png" id="33_quit_p"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_choice"]
 bg_color = Color(0.62, 0.62, 0.62, 1)
@@ -81,11 +85,11 @@ position = Vector2(960, 540)
 z_index = 2
 
 [node name="Raven" type="Sprite2D" parent="Props" unique_id=2007997894]
-position = Vector2(960, 540)
+position = Vector2(306, 717)
 texture = ExtResource("4_raven")
 
 [node name="Quest" parent="Props" unique_id=359985940 instance=ExtResource("2_prop")]
-hitbox = Rect2(0, 0, 190, 248)
+hitbox = Rect2(0, 0, 194, 223)
 pressed_texture = ExtResource("6_quest_p")
 
 [node name="Sprite2D" parent="Props/Quest" index="0"]
@@ -97,7 +101,7 @@ layout_mode = 3
 anchors_preset = 0
 
 [node name="Help" parent="Props" unique_id=1847362930 instance=ExtResource("2_prop")]
-hitbox = Rect2(0, 0, 104, 224)
+hitbox = Rect2(-40, -40, 143, 184)
 pressed_texture = ExtResource("28_help_p")
 
 [node name="Sprite2D" parent="Props/Help" index="0"]
@@ -108,17 +112,17 @@ texture = ExtResource("27_help")
 [node name="Hit" parent="Props/Help/Sprite2D" index="0"]
 layout_mode = 3
 anchors_preset = 0
-offset_left = -78.0
-offset_top = -125.41172
-offset_right = 91.76471
-offset_bottom = 130.00015
+offset_left = -71.5
+offset_top = -92.0
+offset_right = 71.5
+offset_bottom = 92.0
 
 [node name="Book" parent="Props" unique_id=581106069 instance=ExtResource("2_prop")]
-hitbox = Rect2(0, 10, 540, 357)
+hitbox = Rect2(0, 0, 550, 337)
 pressed_texture = ExtResource("8_book_p")
 
 [node name="Sprite2D" parent="Props/Book" index="0"]
-position = Vector2(775, 818.5)
+position = Vector2(797, 878)
 texture = ExtResource("7_book")
 
 [node name="Hit" parent="Props/Book/Sprite2D" index="0"]
@@ -126,11 +130,12 @@ layout_mode = 3
 anchors_preset = 0
 
 [node name="Mortar" parent="Props" unique_id=24236123 instance=ExtResource("2_prop")]
-hitbox = Rect2(20, 0, 212, 419)
+hitbox = Rect2(0, 0, 156, 317)
 pressed_texture = ExtResource("10_mortar_p")
 
 [node name="Sprite2D" parent="Props/Mortar" index="0"]
-position = Vector2(1171, 768.5)
+position = Vector2(1258.9999, 840)
+scale = Vector2(1.1923077, 1.1923077)
 texture = ExtResource("9_mortar")
 
 [node name="Hit" parent="Props/Mortar/Sprite2D" index="0"]
@@ -138,23 +143,29 @@ layout_mode = 3
 anchors_preset = 0
 
 [node name="Candle" parent="Props" unique_id=1819825215 instance=ExtResource("2_prop")]
-hitbox = Rect2(54, 3, 113, 327)
+hitbox = Rect2(0, 0, 82, 230)
 pressed_texture = ExtResource("12_candle_p")
 
 [node name="Sprite2D" parent="Props/Candle" index="0"]
-position = Vector2(1361.5, 763)
+position = Vector2(1479, 851)
+scale = Vector2(1.1707317, 1.1707317)
 texture = ExtResource("11_candle")
 
 [node name="Hit" parent="Props/Candle/Sprite2D" index="0"]
 layout_mode = 3
 anchors_preset = 0
+offset_left = -41.0
+offset_top = -115.0
+offset_right = 41.0
+offset_bottom = 115.0
 
 [node name="Cauldron" parent="Props" unique_id=299125380 instance=ExtResource("2_prop")]
-hitbox = Rect2(74, 0, 380, 475)
+hitbox = Rect2(0, 0, 293, 367)
 pressed_texture = ExtResource("14_pot_p")
 
 [node name="Sprite2D" parent="Props/Cauldron" index="0"]
-position = Vector2(1638, 776.5)
+position = Vector2(1715.0001, 842.00006)
+scale = Vector2(1.1143345, 1.1143345)
 texture = ExtResource("13_pot")
 
 [node name="Hit" parent="Props/Cauldron/Sprite2D" index="0"]
@@ -162,11 +173,11 @@ layout_mode = 3
 anchors_preset = 0
 
 [node name="Bag" parent="Props" unique_id=1444891893 instance=ExtResource("2_prop")]
-hitbox = Rect2(106, 0, 230, 294)
+hitbox = Rect2(0, 0, 198, 248)
 pressed_texture = ExtResource("16_bag_p")
 
 [node name="Sprite2D" parent="Props/Bag" index="0"]
-position = Vector2(1723, 313.5)
+position = Vector2(1804, 282)
 texture = ExtResource("15_bag")
 
 [node name="Hit" parent="Props/Bag/Sprite2D" index="0"]
@@ -174,23 +185,23 @@ layout_mode = 3
 anchors_preset = 0
 
 [node name="Selected" type="Label" parent="Props/Bag/Sprite2D" index="1" unique_id=1750715980]
-offset_left = -62.0
-offset_top = 142.5
-offset_right = 168.0
-offset_bottom = 182.5
+offset_left = -90.0
+offset_top = 16.0
+offset_right = 90.0
+offset_bottom = 70.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
 
 [node name="Coins" type="Sprite2D" parent="Props" unique_id=1213083885]
-position = Vector2(960, 540)
+position = Vector2(1654, 53)
 texture = ExtResource("17_coins")
 
 [node name="Money" type="Label" parent="Props/Coins" unique_id=1516062811]
-offset_left = 630.0
-offset_top = -516.0
-offset_right = 930.0
-offset_bottom = -448.0
+offset_left = -130.0
+offset_top = -56.0
+offset_right = 250.0
+offset_bottom = 54.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 40
 text = "0"
@@ -198,10 +209,10 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Errors" type="Label" parent="Props/Coins" unique_id=1516062812]
-offset_left = 600.0
-offset_top = -424.0
-offset_right = 960.0
-offset_bottom = -388.0
+offset_left = -199.0
+offset_top = 58.0
+offset_right = 266.0
+offset_bottom = 98.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "Ошибок: 0"
@@ -225,7 +236,8 @@ texture = ExtResource("18_bag_in")
 
 [node name="RecipeBook" type="Node2D" parent="." unique_id=45200209]
 visible = false
-z_index = 21
+z_index = 100
+z_as_relative = false
 
 [node name="Sprite2D" type="Sprite2D" parent="RecipeBook" unique_id=1121849088]
 position = Vector2(960, 540)
@@ -297,57 +309,53 @@ horizontal_alignment = 1
 z_index = 60
 layout_mode = 3
 anchors_preset = 0
-offset_right = 1920.0
-offset_bottom = 1080.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 1922.0
+offset_bottom = 1082.0
 
 [node name="Dim" type="ColorRect" parent="Menu" unique_id=1847362941]
 layout_mode = 0
-offset_right = 1920.0
-offset_bottom = 1080.0
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 1918.0
+offset_bottom = 1078.0
 color = Color(0, 0, 0, 0.55)
 
 [node name="Board" type="TextureRect" parent="Menu" unique_id=1847362942]
 layout_mode = 0
-offset_left = 370.0
-offset_top = 197.0
-offset_right = 1550.0
-offset_bottom = 884.0
+offset_left = 384.0
+offset_top = 232.0
+offset_right = 1564.0
+offset_bottom = 919.0
 mouse_filter = 2
 texture = ExtResource("29_menu")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Start" type="Button" parent="Menu" unique_id=1847362943]
+[node name="Start" type="TextureButton" parent="Menu" unique_id=1847362943]
 layout_mode = 0
-offset_left = 610.0
-offset_top = 430.0
-offset_right = 1310.0
-offset_bottom = 570.0
+offset_left = 841.0
+offset_top = 522.0
+offset_right = 1090.0
+offset_bottom = 601.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_colors/font_hover_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 52
-theme_override_styles/normal = SubResource("StyleBoxFlat_choice")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_choice_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_choice")
-text = "НАЧАТЬ"
+texture_normal = ExtResource("30_go")
+texture_pressed = ExtResource("31_go_p")
+ignore_texture_size = true
+stretch_mode = 5
 
-[node name="Quit" type="Button" parent="Menu" unique_id=1847362944]
+[node name="Quit" type="TextureButton" parent="Menu" unique_id=1847362944]
 layout_mode = 0
-offset_left = 610.0
-offset_top = 610.0
-offset_right = 1310.0
-offset_bottom = 750.0
+offset_left = 840.0
+offset_top = 660.0
+offset_right = 1089.0
+offset_bottom = 739.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_colors/font_pressed_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_colors/font_hover_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 52
-theme_override_styles/normal = SubResource("StyleBoxFlat_choice")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_choice_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_choice")
-text = "ВЫХОД"
+texture_normal = ExtResource("32_quit")
+texture_pressed = ExtResource("33_quit_p")
+ignore_texture_size = true
+stretch_mode = 5
 
 [node name="DayTitle" type="Label" parent="." unique_id=1483690689]
 z_index = 30
@@ -396,7 +404,7 @@ texture = ExtResource("22_over")
 [node name="Restart" parent="." unique_id=1197488860 instance=ExtResource("2_prop")]
 visible = false
 z_index = 31
-hitbox = Rect2(0, 27, 306, 93)
+hitbox = Rect2(0, 0, 249, 79)
 pressed_texture = ExtResource("24_again_p")
 
 [node name="Sprite2D" parent="Restart" index="0"]
@@ -410,7 +418,7 @@ anchors_preset = 0
 [node name="Exit" parent="." unique_id=1055546754 instance=ExtResource("2_prop")]
 z_index = 35
 position = Vector2(400.5, 70)
-hitbox = Rect2(0, 0, 237, 76)
+hitbox = Rect2(0, 0, 70, 101)
 pressed_texture = ExtResource("26_exit_p")
 
 [node name="Sprite2D" parent="Exit" index="0"]
